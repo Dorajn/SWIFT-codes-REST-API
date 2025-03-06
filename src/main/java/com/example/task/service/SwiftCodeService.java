@@ -4,15 +4,15 @@ import com.example.task.model.Bank;
 import com.example.task.model.Branch;
 import com.example.task.model.SwiftEntry;
 import com.example.task.myExceptions.IllegalOperationException;
+import com.example.task.myExceptions.IsoCodeNotFoundException;
 import com.example.task.myExceptions.UnitNotFoundException;
+import com.example.task.myExceptions.WrongParametersException;
 import com.example.task.requestModels.SwiftEntryRequest;
 import com.example.task.repo.BankRepo;
 import com.example.task.repo.BranchRepo;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import jakarta.transaction.Transactional;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 
@@ -81,29 +81,8 @@ public class SwiftCodeService {
 
     }
 
-    private Bank getBankEntity(String[] row){
-        Bank bank = new Bank();
-        bank.setSwiftCode(row[1]);
-        bank.setName(row[3]);
-        bank.setAddress(row[4]);
-        bank.setTownName(row[5]);
-        bank.setCountryName(row[6]);
-        bank.setCountryCode(row[0]);
-        bank.setTimeZone(row[7]);
-        return bank;
-    }
 
-    private Branch getBranchEntity(String[] row, Bank bank) {
-        Branch branch = new Branch();
-        branch.setSwiftCode(row[1]);
-        branch.setBank(bank);
-        branch.setBranchName(row[3]);
-        branch.setAddress(row[4]);
-        branch.setTownName(row[5]);
-        return branch;
-    }
-
-    public ResponseEntity<?> getSwiftCodeDetaild(String swiftCode) {
+    public Map<String, Object> getSwiftCodeDetails(String swiftCode) {
         Optional<Bank> bankOpt = bankRepo.findBySwiftCode(swiftCode);
 
         if(bankOpt.isPresent()){
@@ -130,11 +109,7 @@ public class SwiftCodeService {
             }).collect(Collectors.toList());
 
             response.put("branches", branchList);
-
-            return new ResponseEntity<>(
-              response,
-              HttpStatus.OK
-            );
+            return response;
         }
 
         Optional<Branch> branchOpt = branchRepo.findBySwiftCode(swiftCode);
@@ -149,15 +124,18 @@ public class SwiftCodeService {
             response.put("countryName", headquaters.getCountryName());
             response.put("isHeadquarter", false);
             response.put("swiftCode", branch.getSwiftCode());
-            return ResponseEntity.ok(response);
+            return response;
         }
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("SWIFT code not found");
+        throw new UnitNotFoundException("SWIFT code not found");
     }
 
-    public ResponseEntity<?> getAllInfoAboutCountry(String isoCode) {
+    public Map<String, Object> getAllInfoAboutCountry(String isoCode) {
         List<Branch> branches = branchRepo.findByBank_CountryCode(isoCode);
         List<Bank> banks = bankRepo.findByCountryCode(isoCode);
+
+        if(branches.isEmpty() && banks.isEmpty())
+            throw new IsoCodeNotFoundException("IsoCode not found");
 
         Map<String, Object> response = new HashMap<>();
         String countryName = branches.getFirst().getBank().getCountryName();
@@ -186,13 +164,10 @@ public class SwiftCodeService {
         response.put("swiftCodes", swiftCodes);
         response.put("countryISO2", isoCode);
         response.put("countryName", countryName);
-
-        return new ResponseEntity<>(
-            response, HttpStatus.OK
-        );
+        return response;
     }
 
-    public boolean addSwiftCode(SwiftEntryRequest request) {
+    public void addSwiftCode(SwiftEntryRequest request) {
         SwiftEntry entry = mapRequest(request);
 
         if (entry.isHeadquarter()) {
@@ -206,7 +181,6 @@ public class SwiftCodeService {
             bank.setCountryName(entry.getCountryName());
             bank.setTimeZone(null);
             bankRepo.save(bank);
-            return true;
         }
         else {
             String headquarterSwiftCode = entry.getSwiftCode().substring(0, 8) + "XXX";
@@ -214,29 +188,19 @@ public class SwiftCodeService {
 
             if(bankOpt.isPresent()){
                 Bank bank = bankOpt.get();
-                Branch branch = new Branch();
-                branch.setAddress(entry.getAddress());
-                branch.setBank(bank);
-                branch.setSwiftCode(entry.getSwiftCode());
-                branch.setBranchName(entry.getBankName());
+
+                Branch branch = Branch.builder()
+                        .address(entry.getAddress())
+                        .bank(bank)
+                        .swiftCode(entry.getSwiftCode())
+                        .branchName(entry.getBankName())
+                        .build();
 
                 branchRepo.save(branch);
-                return true;
             }
-
          }
-        return false;
-    }
 
-    private SwiftEntry mapRequest(SwiftEntryRequest request) {
-        SwiftEntry entry = new SwiftEntry();
-        entry.setAddress(request.address());
-        entry.setSwiftCode(request.swiftCode());
-        entry.setBankName(request.bankName());
-        entry.setHeadquarter(request.isHeadquarter().equals("true"));
-        entry.setCountryISO2(request.countryISO2());
-        entry.setCountryName(request.countryName());
-        return entry;
+        throw new WrongParametersException("Wrong parameters.");
     }
 
     public void deteleBySwiftCode(String swiftCode) {
@@ -257,5 +221,39 @@ public class SwiftCodeService {
 
             branchRepo.delete(branch);
         }
+    }
+
+
+    private static SwiftEntry mapRequest(SwiftEntryRequest request) {
+        return SwiftEntry.builder()
+                .address(request.address())
+                .swiftCode(request.swiftCode())
+                .bankName(request.bankName())
+                .isHeadquarter("true".equals(request.isHeadquarter()))
+                .countryISO2(request.countryISO2())
+                .countryName(request.countryName())
+                .build();
+    }
+
+    private static Bank getBankEntity(String[] row){
+        Bank bank = new Bank();
+        bank.setSwiftCode(row[1]);
+        bank.setName(row[3]);
+        bank.setAddress(row[4]);
+        bank.setTownName(row[5]);
+        bank.setCountryName(row[6]);
+        bank.setCountryCode(row[0]);
+        bank.setTimeZone(row[7]);
+        return bank;
+    }
+
+    private static Branch getBranchEntity(String[] row, Bank bank) {
+        Branch branch = new Branch();
+        branch.setSwiftCode(row[1]);
+        branch.setBank(bank);
+        branch.setBranchName(row[3]);
+        branch.setAddress(row[4]);
+        branch.setTownName(row[5]);
+        return branch;
     }
 }

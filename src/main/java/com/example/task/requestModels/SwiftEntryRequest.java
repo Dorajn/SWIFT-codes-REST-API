@@ -6,5 +6,4 @@ public record SwiftEntryRequest(String address,
          String countryName,
          String isHeadquarter,
          String swiftCode) {
-
 }
