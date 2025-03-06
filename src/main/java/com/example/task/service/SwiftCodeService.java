@@ -68,8 +68,6 @@ public class SwiftCodeService {
 
                     if (bank.isPresent()) {
                         branches.add(getBranchEntity(nextLine, bank.get()));
-                    } else {
-                        System.out.println("Brak banku centralnego dla oddziału: " + swiftCode);
                     }
                 }
             }

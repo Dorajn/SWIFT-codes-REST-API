@@ -17,9 +17,3 @@ CREATE TABLE branches (
     address TEXT,
     town_name TEXT
 );
-
-drop table branches
-drop table banks
-
-select * from branches
-select * from banks
