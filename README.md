@@ -21,15 +21,11 @@ Ensure you have installed:
    ```sh
    git clone https://github.com/Dorajn/SWIFT-codes-REST-API.git
    ```
-2. Build the application Docker image:
+2. Build and run the application using:
    ```sh
-   docker build -t swift-code-api .
+   docker-compose up --build
    ```
-3. Start the application along with PostgreSQL using Docker Compose:
-   ```sh
-   docker-compose up -d
-   ```
-4. The API will be available at:
+3. The API will be available at:
    ```
    http://localhost:8080
    ```
