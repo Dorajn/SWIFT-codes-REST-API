@@ -16,7 +16,7 @@ public class SwiftDataLoader {
 
     @PostConstruct
     public void loadData() {
-        service.loadExcelData("src/main/resources/Interns_2025_SWIFT_CODES - Sheet1.csv");
+        service.loadExcelData("/app/resources/interns.csv");
     }
 
 }

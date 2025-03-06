@@ -1,0 +1,29 @@
+services:
+  database:
+    image: postgres:15
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_DB: codes
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: aqrtm
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: task
+    depends_on:
+      - database
+    environment:
+      SPRING_APPLICATION_NAME: task
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/codes
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: aqrtm
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
