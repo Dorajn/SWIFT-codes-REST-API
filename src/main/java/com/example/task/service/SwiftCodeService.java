@@ -236,11 +236,11 @@ public class SwiftCodeService {
     private static Bank getBankEntity(String[] row){
         Bank bank = new Bank();
         bank.setSwiftCode(row[1]);
-        bank.setName(row[3]);
+        bank.setName(row[3].toUpperCase());
         bank.setAddress(row[4]);
-        bank.setTownName(row[5]);
-        bank.setCountryName(row[6]);
-        bank.setCountryCode(row[0]);
+        bank.setTownName(row[5].toUpperCase());
+        bank.setCountryName(row[6].toUpperCase());
+        bank.setCountryCode(row[0].toUpperCase());
         bank.setTimeZone(row[7]);
         return bank;
     }
@@ -249,9 +249,9 @@ public class SwiftCodeService {
         Branch branch = new Branch();
         branch.setSwiftCode(row[1]);
         branch.setBank(bank);
-        branch.setBranchName(row[3]);
+        branch.setBranchName(row[3].toUpperCase());
         branch.setAddress(row[4]);
-        branch.setTownName(row[5]);
+        branch.setTownName(row[5].toUpperCase());
         return branch;
     }
 }
